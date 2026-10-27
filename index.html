@@ -1,0 +1,638 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DevZaparoli · Kamui</title>
+  <meta name="description" content="Portfólio de Kauan Zaparoli Araujo — dentro da dimensão Kamui.">
+  <meta name="theme-color" content="#0b0c0f">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --void-top: #2b2e35;
+      --void-mid: #16181c;
+      --void-bottom: #070708;
+      --face: rgba(36, 39, 45, 0.78);
+      --face-top: #464a52;
+      --face-side: #1b1d22;
+      --edge: rgba(255, 255, 255, 0.09);
+      --text: #f1f1f1;
+      --text-2: #c9cbd0;
+      --muted: #8d9098;
+      --red: #e0101e;
+      --red-dark: #8a0008;
+      --depth: 14px;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; }
+    body {
+      background: linear-gradient(var(--void-top), var(--void-mid) 55%, var(--void-bottom));
+      background-color: var(--void-mid);
+      color: var(--text);
+      font-family: 'Fira Code', Consolas, monospace;
+      line-height: 1.6;
+      overflow: hidden;
+    }
+    a { color: inherit; }
+    button { font: inherit; color: inherit; }
+    :focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
+
+    /* ---------- fundo da dimensão ---------- */
+    #espiral-fundo {
+      position: fixed; inset: -20%; width: 140%; height: 140%;
+      opacity: 0.07; pointer-events: none;
+      animation: girar 60s linear infinite;
+    }
+    #kanji {
+      position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
+      font-family: serif; font-size: min(48vw, 70vh); line-height: 1;
+      color: #fff; opacity: 0.025; pointer-events: none; white-space: nowrap;
+    }
+    #cena-canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+    @keyframes girar { to { transform: rotate(360deg); } }
+
+    /* ---------- vórtice de teleporte ---------- */
+    #vortice {
+      position: fixed; inset: 0; width: 100%; height: 100%;
+      pointer-events: none; opacity: 0; z-index: 5;
+    }
+
+    /* ---------- topo ---------- */
+    header {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 6;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px; pointer-events: none;
+    }
+    .marca { display: flex; align-items: center; gap: 10px; font-weight: 700; pointer-events: auto; text-decoration: none; }
+    .marca svg { width: 26px; height: 26px; }
+    .coordenada { font-size: 12px; color: var(--muted); letter-spacing: 2px; }
+    .coordenada b { color: var(--red); font-weight: 500; }
+
+    /* ---------- cena e lajes ---------- */
+    main {
+      position: fixed; inset: 0; z-index: 4;
+      display: grid; place-items: center;
+      padding: 72px 16px 112px;
+    }
+    .secao { grid-area: 1 / 1; width: min(780px, 100%); display: flex; justify-content: center; }
+    .secao[hidden] { display: none; }
+    .bloco {
+      position: relative; width: calc(100% - var(--depth)); margin-top: var(--depth);
+      will-change: transform, opacity, filter;
+    }
+    /* faces de cubo: topo e lateral, como os blocos do Kamui */
+    .bloco::before, .bloco::after { content: ""; position: absolute; pointer-events: none; }
+    .bloco::before {
+      left: 0; right: 0; top: calc(-1 * var(--depth)); height: var(--depth);
+      background: linear-gradient(90deg, rgba(70, 74, 82, 0.9), rgba(58, 62, 70, 0.75));
+      transform: skewX(-45deg); transform-origin: bottom left;
+      border-top: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    .bloco::after {
+      top: 0; bottom: 0; right: calc(-1 * var(--depth)); width: var(--depth);
+      background: linear-gradient(rgba(30, 32, 37, 0.95), rgba(14, 15, 18, 0.95));
+      transform: skewY(-45deg); transform-origin: top left;
+    }
+    .laje {
+      position: relative;
+      max-height: calc(100dvh - 210px);
+      overflow: auto; overscroll-behavior: contain;
+      padding: 32px clamp(20px, 4vw, 40px);
+      background: linear-gradient(160deg, rgba(48, 51, 58, 0.82), var(--face) 40%, rgba(20, 21, 25, 0.88));
+      border: 1px solid var(--edge);
+      box-shadow: 0 40px 90px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+      backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
+      scrollbar-width: thin; scrollbar-color: #444 transparent;
+    }
+    .rotulo { font-size: 12px; letter-spacing: 3px; color: var(--red); margin: 0 0 6px; text-transform: uppercase; }
+    h1, h2 { margin: 0 0 18px; line-height: 1.2; }
+    h2 { font-size: clamp(22px, 3.4vw, 30px); }
+    h2:focus { outline: none; }
+    p { color: var(--text-2); margin: 0 0 14px; }
+
+    /* início */
+    .inicio { text-align: center; }
+    .inicio .olho { width: 96px; height: 96px; margin: 0 auto 18px; display: block; animation: girar 14s linear infinite reverse; filter: drop-shadow(0 0 24px rgba(224, 16, 30, 0.45)); }
+    .inicio h1 { font-size: clamp(36px, 8vw, 64px); letter-spacing: 1px; text-shadow: 0 0 18px rgba(255, 255, 255, 0.25); margin-bottom: 8px; }
+    .inicio .kamui { color: var(--red); letter-spacing: 5px; margin-bottom: 20px; }
+    .botao {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 18px; margin-top: 8px;
+      background: rgba(224, 16, 30, 0.08); border: 1px solid rgba(224, 16, 30, 0.6);
+      color: var(--text); text-decoration: none; cursor: pointer;
+      transition: background .2s, transform .2s;
+    }
+    .botao:hover { background: rgba(224, 16, 30, 0.22); transform: translateY(-1px); }
+    .dica { font-size: 12px; color: var(--muted); margin-top: 18px; }
+    kbd { border: 1px solid #444; border-bottom-width: 2px; padding: 0 5px; font: inherit; font-size: 11px; }
+
+    /* sobre */
+    .fatos { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-top: 22px; }
+    .fato { border: 1px solid var(--edge); background: rgba(0, 0, 0, 0.22); padding: 12px 14px; }
+    .fato span { display: block; font-size: 11px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; }
+    .fato strong { font-weight: 500; }
+
+    /* stack */
+    .stack { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 12px; }
+    .stack a {
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+      padding: 18px 8px 14px; text-decoration: none; font-size: 13px;
+      border: 1px solid var(--edge); background: rgba(0, 0, 0, 0.25);
+      transition: border-color .2s, transform .2s;
+    }
+    .stack a:hover { border-color: var(--red); transform: translateY(-3px); }
+    .stack img { width: 42px; height: 42px; }
+
+    /* projetos */
+    .repos { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+    .repo {
+      display: flex; flex-direction: column; gap: 6px; padding: 14px 16px;
+      text-decoration: none; border: 1px solid var(--edge); background: rgba(0, 0, 0, 0.25);
+      transition: border-color .2s;
+    }
+    .repo:hover { border-color: var(--red); }
+    .repo strong { font-weight: 500; overflow-wrap: anywhere; }
+    .repo p { font-size: 13px; margin: 0; color: var(--muted); flex: 1; }
+    .repo small { font-size: 12px; color: var(--muted); }
+    .repo small b { color: var(--red); font-weight: 400; }
+    .aviso { color: var(--muted); font-size: 14px; }
+
+    /* github */
+    .stats { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
+    .stats img { max-width: 100%; height: auto; }
+    .snake { width: 100%; display: block; margin-bottom: 18px; }
+
+    /* contato */
+    .links { display: grid; gap: 12px; }
+    .links a {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 16px 18px; text-decoration: none;
+      border: 1px solid var(--edge); background: rgba(0, 0, 0, 0.25);
+      transition: border-color .2s, padding .2s;
+    }
+    .links a:hover { border-color: var(--red); padding-left: 24px; }
+    .links small { color: var(--muted); }
+
+    /* ---------- navegação (mapa da dimensão) ---------- */
+    nav {
+      position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 6;
+      max-width: calc(100% - 24px);
+    }
+    nav ol {
+      list-style: none; margin: 0; padding: 6px;
+      display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none;
+      background: rgba(12, 13, 16, 0.72); border: 1px solid var(--edge);
+      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    }
+    nav ol::-webkit-scrollbar { display: none; }
+    nav button {
+      display: flex; align-items: center; gap: 8px; white-space: nowrap;
+      padding: 8px 12px; font-size: 13px; color: var(--muted);
+      background: none; border: 1px solid transparent; cursor: pointer;
+      transition: color .2s, border-color .2s, background .2s;
+    }
+    nav button:hover { color: var(--text); }
+    nav button .cubo { width: 9px; height: 9px; background: #3b3f47; box-shadow: 2px -2px 0 #555a63; transition: background .2s, box-shadow .2s; }
+    nav button[aria-current="true"] { color: var(--text); border-color: rgba(224, 16, 30, 0.5); background: rgba(224, 16, 30, 0.1); }
+    nav button[aria-current="true"] .cubo { background: var(--red); box-shadow: 2px -2px 0 var(--red-dark); }
+    @media (max-width: 640px) {
+      nav button { padding: 8px 10px; }
+      nav button:not([aria-current="true"]) .nome { display: none; }
+      header { padding: 12px 16px; }
+      .coordenada { display: none; }
+    }
+
+    /* ---------- entrada ---------- */
+    #intro {
+      position: fixed; inset: 0; z-index: 20; background: #020202;
+      transition: opacity .9s ease, transform .9s ease, filter .9s ease;
+    }
+    #intro img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    @media (orientation: portrait) { #intro img { object-fit: contain; } }
+    #intro.saindo { opacity: 0; transform: scale(1.08); filter: blur(6px); pointer-events: none; }
+    #pular {
+      position: absolute; right: 20px; bottom: 20px;
+      background: transparent; color: var(--muted); cursor: pointer;
+      border: 1px solid #333; padding: 6px 14px; font-size: 13px;
+    }
+    #pular:hover { color: var(--text); border-color: var(--red); }
+    body.em-intro main, body.em-intro nav, body.em-intro header { visibility: hidden; }
+
+    @media (prefers-reduced-motion: reduce) {
+      #espiral-fundo, .inicio .olho { animation: none; }
+    }
+  </style>
+</head>
+<body class="em-intro">
+
+  <svg id="espiral-fundo" viewBox="-600 -600 1200 1200" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
+  <div id="kanji" aria-hidden="true">神威</div>
+  <canvas id="cena-canvas" aria-hidden="true"></canvas>
+  <svg id="vortice" viewBox="-600 -600 1200 1200" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
+
+  <header>
+    <a class="marca" href="#inicio" data-ir="inicio"><svg class="mangekyo" viewBox="-40 -40 80 80" aria-hidden="true"></svg>DevZaparoli</a>
+    <div class="coordenada" aria-live="polite">DIMENSÃO KAMUI · BLOCO <b id="coord">01</b> / <span id="total">06</span></div>
+  </header>
+
+  <main>
+    <section class="secao" id="inicio" aria-labelledby="t-inicio">
+      <div class="bloco"><div class="laje inicio">
+        <svg class="olho mangekyo" viewBox="-40 -40 80 80" aria-hidden="true"></svg>
+        <h1 id="t-inicio" tabindex="-1">DevZaparoli</h1>
+        <p class="kamui">神威 · KAMUI</p>
+        <p>Kauan Zaparoli Araujo — estudante de Ciência da Computação e Assistente de TI.</p>
+        <button class="botao" type="button" data-ir="sobre">explorar a dimensão ›</button>
+        <p class="dica">navegue com <kbd>←</kbd> <kbd>→</kbd>, rolando ou pelo mapa abaixo</p>
+      </div></div>
+    </section>
+
+    <section class="secao" id="sobre" aria-labelledby="t-sobre" hidden>
+      <div class="bloco"><div class="laje">
+        <p class="rotulo">Bloco 02 · Sobre mim</p>
+        <h2 id="t-sobre" tabindex="-1">Quem está nessa dimensão</h2>
+        <p>Me chamo <strong>Kauan Zaparoli Araujo</strong>, tenho 18 anos e moro em São Paulo - SP. Atualmente curso Ciência da Computação na Universidade Cruzeiro do Sul. Trabalho como Assistente de TI e tenho interesse em atuar como programador.</p>
+        <div class="fatos">
+          <div class="fato"><span>Idade</span><strong>18 anos</strong></div>
+          <div class="fato"><span>Local</span><strong>São Paulo - SP</strong></div>
+          <div class="fato"><span>Curso</span><strong>Ciência da Computação</strong></div>
+          <div class="fato"><span>Universidade</span><strong>Cruzeiro do Sul</strong></div>
+          <div class="fato"><span>Trabalho</span><strong>Assistente de TI</strong></div>
+          <div class="fato"><span>Objetivo</span><strong>Programador</strong></div>
+        </div>
+      </div></div>
+    </section>
+
+    <section class="secao" id="stack" aria-labelledby="t-stack" hidden>
+      <div class="bloco"><div class="laje">
+        <p class="rotulo">Bloco 03 · Stack</p>
+        <h2 id="t-stack" tabindex="-1">Ferramentas que carrego</h2>
+        <div class="stack">
+          <a href="https://www.python.org"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/python/python-original.svg" alt="">Python</a>
+          <a href="https://www.mysql.com"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/mysql/mysql-original.svg" alt="">SQL</a>
+          <a href="https://www.java.com"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/java/java-original.svg" alt="">Java</a>
+          <a href="https://www.kernel.org"><img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/linux/linux-original.svg" alt="">Linux</a>
+          <a href="https://www.cisco.com"><img src="https://cdn.simpleicons.org/cisco/FFFFFF" alt="">Redes</a>
+          <a href="https://github.com/DevZaparoli"><img src="https://cdn.simpleicons.org/github/FFFFFF" alt="">GitHub</a>
+        </div>
+      </div></div>
+    </section>
+
+    <section class="secao" id="projetos" aria-labelledby="t-projetos" hidden>
+      <div class="bloco"><div class="laje">
+        <p class="rotulo">Bloco 04 · Projetos</p>
+        <h2 id="t-projetos" tabindex="-1">Repositórios guardados aqui</h2>
+        <div class="repos" id="repos"><p class="aviso">Puxando os repositórios para a dimensão…</p></div>
+      </div></div>
+    </section>
+
+    <section class="secao" id="github" aria-labelledby="t-github" hidden>
+      <div class="bloco"><div class="laje">
+        <p class="rotulo">Bloco 05 · GitHub</p>
+        <h2 id="t-github" tabindex="-1">Rastros no GitHub</h2>
+        <div class="stats">
+          <img loading="lazy" src="https://github-readme-stats-two-omega-43.vercel.app/api?username=DevZaparoli&show_icons=true&locale=pt-br&commits_year=2026&hide=contribs&cache_seconds=21600&bg_color=00000000&title_color=ffffff&text_color=c9cbd0&icon_color=e0101e&border_color=2a2d33&ring_color=e0101e&custom_title=My%20GitHub%20Statistics" alt="Estatísticas do GitHub de DevZaparoli">
+          <img loading="lazy" src="https://github-readme-stats-two-omega-43.vercel.app/api/top-langs/?username=DevZaparoli&layout=compact&custom_title=Stack&langs_count=8&bg_color=00000000&title_color=ffffff&text_color=c9cbd0&border_color=2a2d33" alt="Linguagens mais usadas">
+        </div>
+        <img class="snake" loading="lazy" src="https://raw.githubusercontent.com/DevZaparoli/DevZaparoli/output/github-contribution-grid-snake-dark.svg" alt="Cobra comendo o gráfico de contribuições">
+        <a class="botao" href="https://github.com/DevZaparoli">ver perfil no GitHub ›</a>
+      </div></div>
+    </section>
+
+    <section class="secao" id="contato" aria-labelledby="t-contato" hidden>
+      <div class="bloco"><div class="laje">
+        <p class="rotulo">Bloco 06 · Contato</p>
+        <h2 id="t-contato" tabindex="-1">Saindo da dimensão</h2>
+        <p>Quer conversar? Me encontre por aqui:</p>
+        <div class="links">
+          <a href="https://www.linkedin.com/in/kauan-araujo-dev/"><span>LinkedIn</span><small>kauan-araujo-dev ›</small></a>
+          <a href="https://github.com/DevZaparoli"><span>GitHub</span><small>DevZaparoli ›</small></a>
+        </div>
+      </div></div>
+    </section>
+  </main>
+
+  <nav aria-label="Mapa da dimensão">
+    <ol id="mapa"></ol>
+  </nav>
+
+  <div id="intro" aria-hidden="true">
+    <img id="intro-img" alt="">
+    <button id="pular" type="button">pular ›</button>
+  </div>
+
+  <script>
+    const reduzido = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const secoes = [...document.querySelectorAll('.secao')];
+    const nomes = { inicio: 'Início', sobre: 'Sobre', stack: 'Stack', projetos: 'Projetos', github: 'GitHub', contato: 'Contato' };
+
+    // ---------- desenhos: espiral do Kamui e Mangekyō do Obito ----------
+    const pt = (r, a) => `${(r * Math.cos(a)).toFixed(1)},${(r * Math.sin(a)).toFixed(1)}`;
+
+    function braco(fase, delta, b = 0.24, r0 = 2.5, r1 = 900, passos = 100) {
+      const tmax = Math.log(r1 / r0) / b, ext = [], int = [];
+      for (let i = 0; i <= passos; i++) {
+        const t = tmax * i / passos, r = r0 * Math.exp(b * t);
+        ext.push(pt(r, t + fase));
+        int.push(pt(r, t + fase + delta));
+      }
+      return 'M' + ext.concat(int.reverse()).join(' L') + 'Z';
+    }
+
+    function espiral(svg, id) {
+      let s = `<defs><radialGradient id="${id}" gradientUnits="userSpaceOnUse" cx="0" cy="0" r="700">
+        <stop offset="0%" stop-color="#000"/><stop offset="5%" stop-color="#c4c4c4"/>
+        <stop offset="40%" stop-color="#8c8c8c" stop-opacity=".8"/><stop offset="100%" stop-color="#3a3a3a" stop-opacity="0"/>
+      </radialGradient></defs><g>`;
+      for (let k = 0; k < 6; k++) {
+        s += `<path d="${braco(k * Math.PI / 3, k % 2 ? 0.22 : 0.42)}" fill="url(#${id})" opacity="${k % 2 ? 0.55 : 0.85}"/>`;
+      }
+      svg.innerHTML = s + '</g>';
+    }
+    espiral(document.getElementById('espiral-fundo'), 'g-fundo');
+    espiral(document.getElementById('vortice'), 'g-vortice');
+
+    const grau = d => d * Math.PI / 180;
+    const lamina = a0 => `M${pt(11, grau(a0))} Q${pt(27, grau(a0 + 22))} ${pt(36.5, grau(a0 + 78))} Q${pt(21, grau(a0 + 70))} ${pt(11, grau(a0 + 92))} Z`;
+    document.querySelectorAll('.mangekyo').forEach(svg => {
+      svg.innerHTML = `<circle r="38" fill="#050505"/><circle r="35.5" fill="#d00010"/>
+        <circle r="35.5" fill="none" stroke="#7a0008" stroke-width="5" opacity=".6"/>
+        <g fill="#070707">${[0, 120, 240].map(a => `<path d="${lamina(a)}"/>`).join('')}<circle r="12"/></g>
+        <circle r="5.5" fill="#d00010"/><circle r="2.6" fill="#070707"/>`;
+    });
+
+    // ---------- dimensão: blocos 3D com profundidade ----------
+    const canvas = document.getElementById('cena-canvas');
+    const ctx = canvas.getContext('2d');
+    let W = 0, H = 0;
+
+    function redimensionar() {
+      const dpr = Math.min(devicePixelRatio || 1, 2);
+      W = innerWidth; H = innerHeight;
+      canvas.width = W * dpr; canvas.height = H * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    addEventListener('resize', redimensionar);
+    redimensionar();
+
+    let semente = 7;
+    const aleatorio = (a, b) => {
+      semente = (semente * 16807) % 2147483647;
+      return a + (b - a) * (semente / 2147483647);
+    };
+
+    const ESPACO = 1500; // distância entre os blocos de cada seção
+    const alvos = secoes.map((_, i) => ({ x: i * ESPACO, y: i % 2 ? -260 : 220 }));
+    const fimX = alvos.at(-1).x;
+
+    const cubos = [];
+    for (let i = 0; i < 130; i++) {
+      cubos.push({
+        x: aleatorio(-1600, fimX + 1600), y: aleatorio(-1400, 1400), z: aleatorio(1.25, 9),
+        s: aleatorio(40, 230), fase: aleatorio(0, 6.28), amp: aleatorio(8, 26), vel: aleatorio(0.15, 0.45)
+      });
+    }
+    cubos.sort((a, b) => b.z - a.z);
+    const poeira = Array.from({ length: 70 }, () => ({
+      x: aleatorio(-1600, fimX + 1600), y: aleatorio(-1200, 1200), z: aleatorio(1.5, 8), r: aleatorio(0.6, 1.8), vel: aleatorio(4, 14)
+    }));
+
+    const cam = { x: 0, y: 220, alvoX: 0, alvoY: 220 };
+    const mouse = { x: 0, y: 0, alvoX: 0, alvoY: 0 };
+    addEventListener('pointermove', e => {
+      mouse.alvoX = (e.clientX / W - 0.5) * 90;
+      mouse.alvoY = (e.clientY / H - 0.5) * 60;
+    });
+
+    const NEVOA = [20, 22, 26];
+    const mistura = (cor, t) => cor.map((c, i) => Math.round(c + (NEVOA[i] - c) * t));
+    const rgb = (c, a = 1) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
+    const FACE = [48, 51, 58], TOPO = [72, 76, 85], LADO = [32, 34, 40], BAIXO = [22, 23, 27], ARESTA = [96, 100, 110];
+
+    function projetar(x, y, z) {
+      const k = 1 / z;
+      return [W / 2 + (x - cam.x - mouse.x) * k, H / 2 + (y - cam.y - mouse.y) * k];
+    }
+
+    function desenharCubo(c, t) {
+      const bob = reduzido ? 0 : Math.sin(t * c.vel + c.fase) * c.amp;
+      const x0 = c.x, y0 = c.y + bob, s = c.s, z0 = c.z, z1 = c.z + s / 650;
+      const f = [projetar(x0, y0, z0), projetar(x0 + s, y0, z0), projetar(x0 + s, y0 + s, z0), projetar(x0, y0 + s, z0)];
+      const b = [projetar(x0, y0, z1), projetar(x0 + s, y0, z1), projetar(x0 + s, y0 + s, z1), projetar(x0, y0 + s, z1)];
+      const tam = s / z0;
+      if (f[2][0] < -tam || f[0][0] > W + tam || f[2][1] < -tam || f[0][1] > H + tam) return;
+
+      const nev = Math.min(0.88, (z0 - 1.25) / 7.75 * 0.9);
+      const alfa = 1 - nev * 0.35;
+      // faces laterais (topo, direita, baixo, esquerda); a frontal cobre as que ficam escondidas
+      const lados = [[0, 1, TOPO], [1, 2, LADO], [2, 3, BAIXO], [3, 0, LADO]];
+      for (const [i, j, cor] of lados) {
+        ctx.beginPath();
+        ctx.moveTo(...f[i]); ctx.lineTo(...f[j]); ctx.lineTo(...b[j]); ctx.lineTo(...b[i]);
+        ctx.closePath();
+        ctx.fillStyle = rgb(mistura(cor, nev), alfa);
+        ctx.fill();
+      }
+      ctx.beginPath();
+      ctx.moveTo(...f[0]); ctx.lineTo(...f[1]); ctx.lineTo(...f[2]); ctx.lineTo(...f[3]);
+      ctx.closePath();
+      ctx.fillStyle = rgb(mistura(FACE, nev), alfa);
+      ctx.fill();
+      ctx.strokeStyle = rgb(mistura(ARESTA, nev), 0.5 * alfa);
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
+    let anterior = performance.now();
+    function quadro(agora) {
+      const dt = Math.min(0.05, (agora - anterior) / 1000);
+      anterior = agora;
+      const suave = reduzido ? 1 : 1 - Math.exp(-dt * 2.6);
+      cam.x += (cam.alvoX - cam.x) * suave;
+      cam.y += (cam.alvoY - cam.y) * suave;
+      mouse.x += (mouse.alvoX - mouse.x) * (1 - Math.exp(-dt * 3));
+      mouse.y += (mouse.alvoY - mouse.y) * (1 - Math.exp(-dt * 3));
+
+      ctx.clearRect(0, 0, W, H);
+      const t = agora / 1000;
+      for (const p of poeira) {
+        const [px, py] = projetar(p.x, p.y - (reduzido ? 0 : (t * p.vel) % 2400), p.z);
+        if (px < 0 || px > W || py < 0 || py > H) continue;
+        ctx.fillStyle = `rgba(200,205,215,${0.35 / p.z + 0.05})`;
+        ctx.fillRect(px, py, p.r, p.r);
+      }
+      for (const c of cubos) desenharCubo(c, t);
+      requestAnimationFrame(quadro);
+    }
+    requestAnimationFrame(quadro);
+
+    // ---------- navegação com teleporte Kamui ----------
+    const mapa = document.getElementById('mapa');
+    secoes.forEach((s, i) => {
+      const li = document.createElement('li');
+      li.innerHTML = `<button type="button" data-ir="${s.id}"><span class="cubo"></span><span class="nome">${nomes[s.id]}</span></button>`;
+      mapa.append(li);
+    });
+    document.getElementById('total').textContent = String(secoes.length).padStart(2, '0');
+
+    const vortice = document.getElementById('vortice');
+    let atual = 0, animando = false;
+
+    function marcarAtual(i) {
+      mapa.querySelectorAll('button').forEach((b, j) => b.setAttribute('aria-current', j === i ? 'true' : 'false'));
+      mapa.querySelectorAll('button')[i].scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      document.getElementById('coord').textContent = String(i + 1).padStart(2, '0');
+      history.replaceState(null, '', '#' + secoes[i].id);
+      cam.alvoX = alvos[i].x;
+      cam.alvoY = alvos[i].y;
+    }
+
+    const SUGAR = [
+      { transform: 'rotate(0deg) scale(1)', opacity: 1, filter: 'blur(0)' },
+      { transform: 'rotate(-220deg) scale(0)', opacity: 0, filter: 'blur(8px)' }
+    ];
+    const SOLTAR = [
+      { transform: 'rotate(220deg) scale(0)', opacity: 0, filter: 'blur(8px)' },
+      { transform: 'rotate(0deg) scale(1)', opacity: 1, filter: 'blur(0)' }
+    ];
+
+    function surgir(secao) {
+      secao.hidden = false;
+      secao.querySelector('.laje').scrollTop = 0;
+      if (reduzido) return Promise.resolve();
+      const a = secao.querySelector('.bloco').animate(SOLTAR, { duration: 620, easing: 'cubic-bezier(.2,.8,.2,1)' });
+      return a.finished;
+    }
+
+    async function irPara(i) {
+      if (animando || i === atual || i < 0 || i >= secoes.length) return;
+      animando = true;
+      const de = secoes[atual], para = secoes[i];
+      atual = i;
+      marcarAtual(i);
+
+      if (!reduzido) {
+        vortice.animate([
+          { opacity: 0, transform: 'rotate(0deg) scale(.2)' },
+          { opacity: .55, transform: 'rotate(260deg) scale(1.2)', offset: .45 },
+          { opacity: 0, transform: 'rotate(560deg) scale(.1)' }
+        ], { duration: 1100, easing: 'ease-in-out' });
+        document.querySelectorAll('header .mangekyo').forEach(m =>
+          m.animate([{ transform: 'rotate(0)' }, { transform: 'rotate(-720deg)' }], { duration: 1100, easing: 'ease-in-out' }));
+        await de.querySelector('.bloco').animate(SUGAR, { duration: 460, easing: 'cubic-bezier(.6,0,.9,.5)', fill: 'forwards' }).finished;
+        de.querySelector('.bloco').getAnimations().forEach(a => a.cancel());
+      }
+      de.hidden = true;
+      await surgir(para);
+      para.querySelector('h1, h2').focus({ preventScroll: true });
+      animando = false;
+    }
+
+    document.addEventListener('click', e => {
+      const alvo = e.target.closest('[data-ir]');
+      if (!alvo) return;
+      e.preventDefault();
+      irPara(secoes.findIndex(s => s.id === alvo.dataset.ir));
+    });
+
+    addEventListener('keydown', e => {
+      if (document.body.classList.contains('em-intro')) return;
+      if (['ArrowRight', 'ArrowDown', 'PageDown'].includes(e.key) && !podeRolar(e.key === 'ArrowDown' ? 1 : 0)) { e.preventDefault(); irPara(atual + 1); }
+      if (['ArrowLeft', 'ArrowUp', 'PageUp'].includes(e.key) && !podeRolar(e.key === 'ArrowUp' ? -1 : 0)) { e.preventDefault(); irPara(atual - 1); }
+    });
+
+    // a laje rola o próprio conteúdo antes de trocar de bloco
+    function podeRolar(dir) {
+      if (!dir) return false;
+      const l = secoes[atual].querySelector('.laje');
+      return dir > 0 ? l.scrollTop + l.clientHeight < l.scrollHeight - 2 : l.scrollTop > 0;
+    }
+
+    let acumulado = 0, ultimaRoda = 0;
+    addEventListener('wheel', e => {
+      if (document.body.classList.contains('em-intro')) return;
+      const dir = Math.sign(e.deltaY || e.deltaX);
+      if (!dir || (Math.abs(e.deltaY) > Math.abs(e.deltaX) && podeRolar(dir))) { acumulado = 0; return; }
+      const agora = performance.now();
+      if (agora - ultimaRoda > 250) acumulado = 0;
+      ultimaRoda = agora;
+      acumulado += e.deltaY || e.deltaX;
+      if (Math.abs(acumulado) > 60 && !animando) {
+        irPara(atual + Math.sign(acumulado));
+        acumulado = 0;
+      }
+    }, { passive: true });
+
+    let toque = null;
+    addEventListener('touchstart', e => { toque = { x: e.touches[0].clientX, y: e.touches[0].clientY }; }, { passive: true });
+    addEventListener('touchend', e => {
+      if (!toque) return;
+      const dx = e.changedTouches[0].clientX - toque.x, dy = e.changedTouches[0].clientY - toque.y;
+      toque = null;
+      if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)) irPara(atual + (dx < 0 ? 1 : -1));
+    }, { passive: true });
+
+    // ---------- projetos via API do GitHub ----------
+    (async () => {
+      const caixa = document.getElementById('repos');
+      try {
+        const r = await fetch('https://api.github.com/users/DevZaparoli/repos?sort=updated&per_page=30');
+        if (!r.ok) throw new Error(r.status);
+        const repos = (await r.json()).filter(x => !x.fork && x.name !== 'DevZaparoli');
+        if (!repos.length) throw new Error('vazio');
+        caixa.replaceChildren(...repos.map(repo => {
+          const a = document.createElement('a');
+          a.className = 'repo';
+          a.href = repo.html_url;
+          const nome = document.createElement('strong');
+          nome.textContent = repo.name;
+          const desc = document.createElement('p');
+          desc.textContent = repo.description || 'Sem descrição.';
+          const info = document.createElement('small');
+          info.innerHTML = `<b>●</b> `;
+          info.append(`${repo.language || '—'} · ★ ${repo.stargazers_count}`);
+          a.append(nome, desc, info);
+          return a;
+        }));
+      } catch {
+        caixa.innerHTML = '<p class="aviso">Não consegui puxar os repositórios agora. <a href="https://github.com/DevZaparoli?tab=repositories">Ver todos no GitHub ›</a></p>';
+      }
+    })();
+
+    // ---------- entrada ----------
+    const intro = document.getElementById('intro');
+    const inicial = Math.max(0, secoes.findIndex(s => '#' + s.id === location.hash));
+    secoes.forEach((s, i) => { s.hidden = i !== inicial; });
+    atual = inicial;
+    marcarAtual(inicial);
+    cam.x = cam.alvoX; cam.y = cam.alvoY;
+
+    let entrou = false;
+    function entrar() {
+      if (entrou) return;
+      entrou = true;
+      intro.classList.add('saindo');
+      document.body.classList.remove('em-intro');
+      setTimeout(() => intro.remove(), 1000);
+      surgir(secoes[atual]);
+    }
+
+    // com link direto (#sobre…) ou movimento reduzido, entra direto na dimensão
+    if (reduzido || location.hash) {
+      intro.remove();
+      document.body.classList.remove('em-intro');
+      entrou = true;
+    } else {
+      const img = document.getElementById('intro-img');
+      img.addEventListener('load', () => setTimeout(entrar, 5600));
+      img.addEventListener('error', entrar);
+      img.src = 'assets/kamui.svg';
+      document.getElementById('pular').addEventListener('click', entrar);
+      addEventListener('keydown', e => { if (e.key === 'Escape' || e.key === 'Enter') entrar(); });
+      setTimeout(entrar, 10000);
+    }
+  </script>
+</body>
+</html>
